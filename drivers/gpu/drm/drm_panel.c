@@ -249,10 +249,17 @@ struct drm_panel *of_drm_find_panel(const struct device_node *np)
 
 	mutex_lock(&panel_lock);
 
-	list_for_each_entry(panel, &panel_list, list) {
-		if (panel->dev->of_node == np) {
+	if (of_machine_is_compatible("fsl,imx8mm")) {
+		list_for_each_entry(panel, &panel_list, list) {
 			mutex_unlock(&panel_lock);
 			return panel;
+		}
+	} else {
+		list_for_each_entry(panel, &panel_list, list) {
+			if (panel->dev->of_node == np) {
+				mutex_unlock(&panel_lock);
+				return panel;
+			}
 		}
 	}
 

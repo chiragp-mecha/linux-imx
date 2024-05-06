@@ -1108,4 +1108,6 @@ extern long sysfs_deprecated;
 #define sysfs_deprecated 0
 #endif
 
+#define anchor()        printk(KERN_ERR "[cheng] -> %s [%d], %s\n", __func__, __LINE__, __FILE__)
+
 #endif /* _DEVICE_H_ */

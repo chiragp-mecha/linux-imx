@@ -514,7 +514,7 @@ static int sec_mipi_dsim_host_detach(struct mipi_dsi_host *host,
 {
 	struct sec_mipi_dsim *dsim = to_sec_mipi_dsim(host);
 
-	if (WARN_ON(!dsim->next && !dsim->panel))
+	if (!dsim->next && !dsim->panel)
 		return -ENODEV;
 
 	/* clear the saved dsi parameters */

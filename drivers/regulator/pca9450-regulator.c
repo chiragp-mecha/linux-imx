@@ -1081,6 +1081,8 @@ static int pca9450_i2c_probe(struct i2c_client *i2c,
 
 	if (of_property_read_bool(i2c->dev.of_node, "nxp,wdog_b-warm-reset"))
 		reset_ctrl = WDOG_B_CFG_WARM;
+	else if (of_property_read_bool(i2c->dev.of_node, "nxp,wdog_b-cold-reset"))
+		reset_ctrl = WDOG_B_CFG_COLD;
 	else
 		reset_ctrl = WDOG_B_CFG_COLD_LDO12;
 

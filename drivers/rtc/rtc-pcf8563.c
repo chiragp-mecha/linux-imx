@@ -209,7 +209,7 @@ static int pcf8563_rtc_read_time(struct device *dev, struct rtc_time *tm)
 	if (buf[PCF8563_REG_SC] & PCF8563_SC_LV) {
 		dev_err(&client->dev,
 			"low voltage detected, date/time is not reliable.\n");
-		return -EINVAL;
+		//return -EINVAL;
 	}
 
 	dev_dbg(&client->dev,

@@ -677,7 +677,6 @@ static int chipone_parse_dt(struct chipone *icn)
 	icn->enable_gpio = devm_gpiod_get(dev, "enable", GPIOD_OUT_LOW);
 	if (IS_ERR(icn->enable_gpio)) {
 		DRM_DEV_ERROR(dev, "failed to get enable GPIO\n");
-		return PTR_ERR(icn->enable_gpio);
 	}
 
 	icn->panel_bridge = devm_drm_of_get_bridge(dev, dev->of_node, 1, 0);

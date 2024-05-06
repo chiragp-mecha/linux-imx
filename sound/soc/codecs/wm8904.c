@@ -844,6 +844,26 @@ static int out_pga_event(struct snd_soc_dapm_widget *w,
 	return 0;
 }
 
+static const char *dmic_text[] = {
+	"DMIC1", "DMIC2"
+};
+
+static SOC_ENUM_SINGLE_DECL(dmic_enum,
+			    WM8904_DIGITAL_MICROPHONE_0, 11, dmic_text);
+
+static const struct snd_kcontrol_new dmic_mux =
+	SOC_DAPM_ENUM("DMIC Mux", dmic_enum);
+
+static const char *cin_text[] = {
+	"ADC", "DMIC"
+};
+
+static SOC_ENUM_SINGLE_DECL(cin_enum,
+			    WM8904_DIGITAL_MICROPHONE_0, 12, cin_text);
+
+static const struct snd_kcontrol_new cin_mux =
+	SOC_DAPM_ENUM("Capture Input", cin_enum);
+
 static const char *input_mode_text[] = {
 	"Single-Ended", "Differential Line", "Differential Mic"
 };
@@ -936,6 +956,10 @@ SND_SOC_DAPM_INPUT("IN2L"),
 SND_SOC_DAPM_INPUT("IN2R"),
 SND_SOC_DAPM_INPUT("IN3L"),
 SND_SOC_DAPM_INPUT("IN3R"),
+
+SND_SOC_DAPM_MUX("DMIC Mux", SND_SOC_NOPM, 0, 0, &dmic_mux),
+SND_SOC_DAPM_MUX("Left Capture Input", SND_SOC_NOPM, 0, 0, &cin_mux),
+SND_SOC_DAPM_MUX("Right Capture Input", SND_SOC_NOPM, 0, 0, &cin_mux),
 
 SND_SOC_DAPM_SUPPLY("MICBIAS", WM8904_MIC_BIAS_CONTROL_0, 0, 0, NULL, 0),
 
@@ -1100,11 +1124,21 @@ static const struct snd_soc_dapm_route adc_intercon[] = {
 	{ "AIFOUTL", NULL, "AIFOUTL Mux" },
 	{ "AIFOUTR", NULL, "AIFOUTR Mux" },
 
+	{ "DMIC Mux", "DMIC1", "IN1L" },
+	{ "DMIC Mux", "DMIC2", "IN1R" },
+
+	{ "Left Capture Input", "ADC", "Left Capture PGA" },
+	{ "Left Capture Input", "DMIC", "DMIC Mux" },
+	{ "Right Capture Input", "ADC", "Right Capture PGA" },
+	{ "Right Capture Input", "DMIC", "DMIC Mux" },
+
 	{ "ADCL", NULL, "CLK_DSP" },
 	{ "ADCL", NULL, "Left Capture PGA" },
+	{ "ADCL", NULL, "Left Capture Input" },
 
 	{ "ADCR", NULL, "CLK_DSP" },
 	{ "ADCR", NULL, "Right Capture PGA" },
+	{ "ADCR", NULL, "Right Capture Input" },
 };
 
 static const struct snd_soc_dapm_route dac_intercon[] = {
@@ -2168,6 +2202,110 @@ static const struct of_device_id wm8904_of_match[] = {
 MODULE_DEVICE_TABLE(of, wm8904_of_match);
 #endif
 
+static int wm8904_set_pdata_from_of(struct i2c_client *i2c,
+				     struct wm8904_priv *wm8904)
+{
+	const struct device_node *np = i2c->dev.of_node;
+	struct wm8904_pdata *pdata;
+	bool drc_cfgs_is_valid = true;
+	bool retune_mobile_cfgs_is_valid = true;
+	int i, j, offset;
+	u32 val32;
+
+	pdata = devm_kzalloc(&i2c->dev, sizeof(*pdata), GFP_KERNEL);
+	if (!pdata)
+		return -ENOMEM;
+
+	if (of_property_read_u32_array(np, "gpio-cfg", pdata->gpio_cfg,
+					ARRAY_SIZE(pdata->gpio_cfg))) {
+		dev_dbg(&i2c->dev, "No 'gpio-cfg' property found\n");
+	}
+
+	if (of_property_read_u32_array(np, "mic-cfg", pdata->mic_cfg,
+					ARRAY_SIZE(pdata->mic_cfg))) {
+		dev_dbg(&i2c->dev, "No 'mic-cfg' property found\n");
+	}
+
+	if (of_property_read_s32(np, "num-drc-cfgs", &pdata->num_drc_cfgs)) {
+		dev_dbg(&i2c->dev, "No 'num-drc-cfgs' property found\n");
+	} else if (pdata->num_drc_cfgs < 0) {
+		dev_err(&i2c->dev, "Negative 'num-drc-cfgs' property found\n");
+		pdata->num_drc_cfgs = 0;
+	} else if (pdata->num_drc_cfgs > 0) {
+		pdata->drc_cfgs = devm_kzalloc(&i2c->dev,
+					       pdata->num_drc_cfgs * sizeof(struct wm8904_drc_cfg),
+					       GFP_KERNEL);
+		for (i = 0; i < pdata->num_drc_cfgs && drc_cfgs_is_valid; i++) {
+			offset = i * WM8904_DRC_REGS;
+			for (j = 0; j < WM8904_DRC_REGS && drc_cfgs_is_valid; j++) {
+				if (of_property_read_u32_index(np,
+							       "drc-cfg-regs",
+							       offset + j,
+							       &val32)) {
+					dev_err(&i2c->dev,
+						"Invalid 'drc-cfg-regs[%i,%i]' property found\n", i, j);
+					drc_cfgs_is_valid = false;
+				} else {
+					pdata->drc_cfgs[i].regs[j] = val32;
+				}
+			}
+			if (of_property_read_string_index(np, "drc-cfg-names", i,
+							  &pdata->drc_cfgs[i].name)) {
+				dev_err(&i2c->dev,
+					"Invalid 'drc-cfg-names[%i]' property found\n", i);
+				drc_cfgs_is_valid = false;
+			}
+		}
+	}
+	if (!drc_cfgs_is_valid) {
+		pdata->num_drc_cfgs = 0;
+	}
+
+	if (of_property_read_s32(np, "num-retune-mobile-cfgs", &pdata->num_retune_mobile_cfgs)) {
+		dev_dbg(&i2c->dev, "No 'num-retune-mobile-cfgs' property found\n");
+	} else if (pdata->num_retune_mobile_cfgs < 0) {
+		dev_err(&i2c->dev, "Negative 'num-retune-mobile-cfgs' property found\n");
+		pdata->num_retune_mobile_cfgs = 0;
+	} else if (pdata->num_retune_mobile_cfgs > 0) {
+		pdata->retune_mobile_cfgs = devm_kzalloc(&i2c->dev,
+			pdata->num_retune_mobile_cfgs * sizeof(struct wm8904_retune_mobile_cfg),
+			GFP_KERNEL);
+		for (i = 0; i < pdata->num_retune_mobile_cfgs && retune_mobile_cfgs_is_valid; i++) {
+			offset = i * WM8904_EQ_REGS;
+			for (j = 0; j < WM8904_EQ_REGS && retune_mobile_cfgs_is_valid; j++) {
+				if (of_property_read_u32_index(np, "retune-mobile-cfg-regs",
+							       offset + j, &val32)) {
+					dev_err(&i2c->dev,
+						"Invalid 'retune-mobile-cfg-regs[%i,%i]' property found\n",
+						i, j);
+					retune_mobile_cfgs_is_valid = false;
+				} else {
+					pdata->retune_mobile_cfgs[i].regs[j] = val32;
+				}
+			}
+			if (of_property_read_u32_index(np, "retune-mobile-cfg-rates", i,
+						       &pdata->retune_mobile_cfgs[i].rate)) {
+				dev_err(&i2c->dev,
+					"Invalid 'retune-mobile-cfg-rates[%i]' property found\n", i);
+				retune_mobile_cfgs_is_valid = false;
+			}
+			if (of_property_read_string_index(np, "retune-mobile-cfg-names",
+							  i, &pdata->retune_mobile_cfgs[i].name)) {
+				dev_err(&i2c->dev,
+					"Invalid 'retune-mobile-cfg-names[%i]' property found\n", i);
+				retune_mobile_cfgs_is_valid = false;
+			}
+		}
+	}
+	if (!retune_mobile_cfgs_is_valid) {
+		pdata->num_retune_mobile_cfgs = 0;
+	}
+
+	wm8904->pdata = pdata;
+
+	return 0;
+}
+
 static const struct i2c_device_id wm8904_i2c_id[];
 
 static int wm8904_i2c_probe(struct i2c_client *i2c)
@@ -2203,14 +2341,19 @@ static int wm8904_i2c_probe(struct i2c_client *i2c)
 		if (match == NULL)
 			return -EINVAL;
 		wm8904->devtype = (enum wm8904_type)match->data;
+		ret = wm8904_set_pdata_from_of(i2c, wm8904);
+		if (ret != 0) {
+			dev_err(&i2c->dev, "Failed to set platform data from of: %d\n", ret);
+			return ret;
+		}
 	} else {
 		const struct i2c_device_id *id =
 			i2c_match_id(wm8904_i2c_id, i2c);
 		wm8904->devtype = id->driver_data;
+		wm8904->pdata = i2c->dev.platform_data;
 	}
 
 	i2c_set_clientdata(i2c, wm8904);
-	wm8904->pdata = i2c->dev.platform_data;
 
 	for (i = 0; i < ARRAY_SIZE(wm8904->supplies); i++)
 		wm8904->supplies[i].supply = wm8904_supply_names[i];
@@ -2281,7 +2424,7 @@ static int wm8904_i2c_probe(struct i2c_client *i2c)
 	/* Apply configuration from the platform data. */
 	if (wm8904->pdata) {
 		for (i = 0; i < WM8904_GPIO_REGS; i++) {
-			if (!wm8904->pdata->gpio_cfg[i])
+			if (wm8904->pdata->gpio_cfg[i] == 0xffff)
 				continue;
 
 			regmap_update_bits(wm8904->regmap,
