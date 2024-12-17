@@ -45,6 +45,63 @@
 		};
 	};
 
+	backlight-dsi {
+		status = "okay";
+		compatible = "pwm-backlight";
+		pwms = <&pwm3 0 5000000>;
+		brightness-levels = <0 255>;
+		num-interpolated-steps = <255>;
+		default-brightness-level = <250>;
+	};
+};
+
+&lcdif {
+	status = "okay";
+};
+
+&pwm3 {
+	#pwm-cells = <2>;
+        pinctrl-names = "default";
+        pinctrl-0 = <&pinctrl_pwm3>;
+        status = "okay";
+};
+
+&mipi_dsi {
+        status = "okay";
+        panel_ep: panel@0 {
+                compatible = "sitronix,st7701s";
+                reg = <0>;
+                reset-gpio = <&gpio2 19 GPIO_ACTIVE_HIGH>;
+                dsi-lanes = <2>;
+                video-mode = <2>;       /* 0: burst mode
+                                         * 1: non-burst mode with sync event
+                                         * 2: non-burst mode with sync pulse
+                                         */
+                panel-width-mm = <60>;
+                panel-height-mm = <60>;
+                status = "okay";
+        };
+};
+
+&i2c3 {
+	clock-frequency = <100000>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_i2c3>;
+	status = "okay";
+
+	ft5336@38 {
+		compatible = "focaltech,ft6236", "ft5x06";
+		reg = <0x38>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_touch>;
+		interrupt-parent = <&gpio3>;
+		interrupts = <21 0>;
+		reset-gpios = <&gpio4 11 GPIO_ACTIVE_HIGH>;
+		touchscreen-size-x = <480>;
+		touchscreen-size-y = <480>;
+		status = "okay";
+	};
+
 };
 
 &iomuxc {
@@ -55,5 +112,24 @@
 		>;
 	};
 
+	pinctrl_i2c3: i2c3grp {
+		fsl,pins = <
+			MX8MM_IOMUXC_I2C3_SCL_I2C3_SCL                          0x400001c3
+			MX8MM_IOMUXC_I2C3_SDA_I2C3_SDA                          0x400001c3
+		>;
+	};
+
+	pinctrl_pwm3: pwm3grp {
+		fsl,pins = <
+			MX8MM_IOMUXC_SPDIF_TX_PWM3_OUT		0x06
+		>;
+	};
+
+	pinctrl_touch: touchgrp {
+		fsl,pins = <
+			MX8MM_IOMUXC_SAI1_TXC_GPIO4_IO11        0x19
+			MX8MM_IOMUXC_SAI5_RXD0_GPIO3_IO21       0x19
+		>;
+	};
 };
 
