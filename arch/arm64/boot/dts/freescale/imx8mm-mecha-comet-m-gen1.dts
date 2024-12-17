@@ -1,0 +1,59 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright 2019 NXP
+ */
+
+/dts-v1/;
+
+#include "imx8mm-mecha.dts"
+
+/ {
+
+	leds {
+		led_wlan: wlan {
+			label = "wlan";
+			gpios = <&gpio1 9 GPIO_ACTIVE_HIGH>;
+			linux,default-trigger = "rfkill0";
+		};
+
+		led_red: red_led {
+			label = "red-led";
+			gpios = <&gpio1 6 GPIO_ACTIVE_HIGH>;
+		};
+
+		led_green: green_led {
+			label = "green-led";
+			gpios = <&gpio1 5 GPIO_ACTIVE_HIGH>;
+		};
+
+		led_blue: red_blue {
+			label = "blue-led";
+			gpios = <&gpio4 29 GPIO_ACTIVE_HIGH>;
+		};
+	};
+	
+	function_button: Function-Button {
+		compatible = "gpio-keys";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_function_btn_gpio>;
+
+		btn1 {
+			label = "Function-Button";
+			gpios = <&gpio1 12 GPIO_ACTIVE_LOW>;
+			wakeup-source;
+			linux,code = <KEY_FN_1>;
+		};
+	};
+
+};
+
+&iomuxc {
+
+	pinctrl_function_btn_gpio: gpiogrp {
+		fsl,pins = <
+			MX8MM_IOMUXC_GPIO1_IO12_GPIO1_IO12		0x19
+		>;
+	};
+
+};
+
