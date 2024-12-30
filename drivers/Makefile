@@ -200,3 +200,4 @@ obj-$(CONFIG_CDX_BUS)		+= cdx/
 
 obj-$(CONFIG_S390)		+= s390/
 obj-y		 		+= mxc/
+obj-$(CONFIG_STAGING_APEX_DRIVER)    += staging/gasket/

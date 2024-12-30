@@ -246,4 +246,7 @@ source "drivers/hte/Kconfig"
 source "drivers/cdx/Kconfig"
 
 source "drivers/mxc/Kconfig"
+
+source "drivers/staging/gasket/Kconfig"
+
 endmenu
