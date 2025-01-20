@@ -59,6 +59,7 @@ config DEBUG_GPIO
 	  that are most common when setting up new platforms or boards.
 
 config GPIO_SYSFS
+	default y
 	bool "/sys/class/gpio/... (sysfs interface)" if EXPERT
 	depends on SYSFS
 	select GPIO_CDEV # We need to encourage the new ABI
