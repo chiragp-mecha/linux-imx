@@ -20,6 +20,10 @@
 #include <linux/of.h>
 #include <linux/err.h>
 
+#ifdef CONFIG_COMMON_CLK
+#undef CONFIG_COMMON_CLK
+#endif
+
 #define PCF8563_REG_ST1		0x00 /* status */
 #define PCF8563_REG_ST2		0x01
 #define PCF8563_BIT_AIE		BIT(1)
