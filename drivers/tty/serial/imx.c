@@ -2305,7 +2305,14 @@ static int imx_uart_probe(struct platform_device *pdev)
 			sport->port.line);
 		return -EINVAL;
 	}
-
+	/* Emtop: imx8mm uart4, used for M4 core */
+	if (sport->port.line == 3 &&
+		of_machine_is_compatible("fsl,imx8mm")) {
+		if ((base = ioremap(0x303d0518, 4)) != NULL) {
+			__raw_writel(0xff, base);
+			iounmap(base);
+		}
+	}
 	base = devm_platform_get_and_ioremap_resource(pdev, 0, &res);
 	if (IS_ERR(base))
 		return PTR_ERR(base);
