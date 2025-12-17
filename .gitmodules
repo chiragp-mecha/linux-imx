@@ -1,0 +1,3 @@
+[submodule "drivers/staging/mwifiex"]
+	path = drivers/staging/mwifiex
+	url = https://github.com/nxp-imx/mwifiex
