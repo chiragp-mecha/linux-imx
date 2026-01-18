@@ -180,18 +180,19 @@ static const struct drm_display_mode rpmini_display_mode = {
 //};
 
 static const struct drm_display_mode rp5_display_mode = {
-	.clock = (1080 + 80 + 80 + 80) * (1240 + 90 + 90) * 30 / 1000,
-	.hdisplay = 1080,
-	.hsync_start = 1080 + 80,            // front porch
-	.hsync_end = 1080 + 80 + 80,         // front + sync
-	.htotal = 1080 + 80 + 80 + 80,       // full line
-	.vdisplay = 1240,
-	.vsync_start = 1240 + 90,            // front porch
-	.vsync_end = 1240 + 90 + 90,         // front + sync
-	.vtotal = 1240 + 90 + 90 + 90,       // full frame
-	.width_mm = 65,                      // or round as needed
-	.height_mm = 75,
+.clock = (1080 + 80 + 80 + 80) * (1240 + 90 + 90 + 90) * 60 / 1000,
+.hdisplay = 1080,
+.hsync_start = 1080 + 80, // front porch
+.hsync_end = 1080 + 80 + 80, // front + sync
+.htotal = 1080 + 80 + 80 + 80, // full line
+.vdisplay = 1240,
+.vsync_start = 1240 + 90, // front porch
+.vsync_end = 1240 + 90 + 90, // front + sync
+.vtotal = 1240 + 90 + 90 + 90, // full frame
+.width_mm = 65, // or round as needed
+.height_mm = 75,
 };
+
 
 static int ch13726a_get_modes(struct drm_panel *panel,
 					struct drm_connector *connector)
